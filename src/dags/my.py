@@ -13,8 +13,6 @@ from airflow.hooks.base import BaseHook
 from airflow.models.xcom import XCom
 
 url = 'https://d5d04q7d963eapoepsqr.apigw.yandexcloud.net'
-#method_url = '/deliveries'
-#payload = {'from': '2022-07-01 22:28:25.843000'}
 headers={
     "X-API-KEY": "25c27781-8fde-4b30-a22e-524044a7580f", # ключ API
     "X-Nickname": "andreas-lucky", # авторизационные данные
@@ -30,17 +28,13 @@ def load_stg_table_couriers (ti, url, headers):
     sort_field='id'
     sort_direction = 'asc'
     while True:
-      #r = requests.get("https://d5d04q7d963eapoepsqr.apigw.yandexcloud.net/deliveries?restaurant_id=&from='2022-01-23 00:00:00'&to='2022-01-24 00:00:00'&sort_field=date&sort_direction=asc&limit=50&offset=0", headers=headers)
       params = {'limit': limit, 'offset': offset,'sort_field':sort_field,'sort_direction':sort_direction}
-      #r = requests.get(url + method_url, headers=headers, params=params)
-      #response_dict = json.loads(r.content)
       couriers_rep = requests.get(url + method_url, headers=headers, params=params).json()
       if len(couriers_rep) == 0:
         conn.commit()
         cur.close()
         conn.close()
         break
-      #values = [[value for value in response_dict[i].values()] for i in range(len(response_dict))]
       values = [[value for value in couriers_rep[i].values()] for i in range(len(couriers_rep))]
       sql = f"INSERT INTO stg.couriers (courier_id, name) VALUES %s"
       execute_values(cur, sql, values)
@@ -56,7 +50,6 @@ def load_stg_table_deliveries (ti, url, headers):
     sort_field='id'
     sort_direction = 'asc'
     while True:
-      #r = requests.get("https://d5d04q7d963eapoepsqr.apigw.yandexcloud.net/deliveries?restaurant_id=&from='2022-01-23 00:00:00'&to='2022-01-24 00:00:00'&sort_field=date&sort_direction=asc&limit=50&offset=0", headers=headers)
       params = {'limit': limit, 'offset': offset,'sort_field':sort_field,'sort_direction':sort_direction}
       deliveries_rep = requests.get(url + method_url, headers=headers, params=params).json()
       if len(deliveries_rep) == 0:
@@ -113,7 +106,7 @@ def update_mart_d_tables(ti):
 
 dag = DAG(
     dag_id='load_data',
-    schedule_interval='0 0 * * *',
+    schedule_interval='0/15 * * * *',
     start_date=datetime.datetime(2023, 1, 1),
     catchup=False,
     dagrun_timeout=datetime.timedelta(minutes=60)
